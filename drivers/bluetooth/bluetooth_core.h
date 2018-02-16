@@ -109,4 +109,5 @@ ret_code_t bluetooth_configure_advertisement_type(uint8_t type);
  *        as long as https:// is written as 0x03
  */
 ret_code_t bluetooth_set_eddystone_url(char* url_buffer, size_t length);
+ret_code_t bluetooth_configure_advertisement_type(uint8_t type);
 #endif
