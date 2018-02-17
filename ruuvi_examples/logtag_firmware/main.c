@@ -74,7 +74,7 @@ APP_TIMER_DEF(main_timer_id); // Creates timer id for our program.
 
 static uint8_t data_buffer[24] = {0};
 static bool fastMode = false;
-static uint64_t debounce = false;
+static uint64_t debounce = 0;
 static uint16_t acceleration_events = 0;
 
 static ruuvi_sensor_t data;
@@ -149,6 +149,7 @@ void main_timer_handler(void * p_context) {
     static uint32_t raw_h = 0;
     static lis2dh12_sensor_buffer_t buffer;
     static int32_t acc[3] = {0};
+    static uint16_t vbat = 0;
 
     // Get raw environmental data.
     bme280_read_measurements();
@@ -163,7 +164,6 @@ void main_timer_handler(void * p_context) {
     acc[2] = buffer.sensor.z;
 
     // Get battery voltage 
-    uint16_t vbat = 0;
     vbat = getBattery();
 
     // Embed data into structure for parsing.
@@ -188,7 +188,7 @@ ret_code_t lis2dh12_int2_handler(const ruuvi_standard_message_t message) {
 }
 
 int main(void) {
-    ret_code_t err_code = 0; // counter, gets incremented by each failed init. It is 0 in the end if init was ok.
+    ret_code_t err_code = 0;
 
     // Initialize log.
     err_code |= init_log();
@@ -228,7 +228,6 @@ int main(void) {
     ctrl[0] = LIS2DH12_HPIS2_MASK;
     lis2dh12_write_register(LIS2DH12_CTRL_REG2, ctrl, 1);
     // Enable interrupt 2 on X-Y-Z HI/LO.
-    //INT2_CFG = 0x7F
     ctrl[0] = 0x7F;
     lis2dh12_write_register(LIS2DH12_INT2_CFG, ctrl, 1);
     // Interrupt on 64 mg+ (highpassed, +/-).
@@ -251,7 +250,7 @@ int main(void) {
     bme280_set_mode(BME280_MODE_NORMAL);
     NRF_LOG_DEBUG("BME280 configuration done\r\n");
 
-    // Visually display init status. Hangs if there was an error, waits 3 seconds on success.
+    // Visually display init status. Hangs if there was an error.
     init_blink_status(err_code);
 
     // Init ok, start watchdog with default wdt event handler (reset).
