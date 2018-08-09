@@ -151,8 +151,17 @@ static void checkAndUpdateInterval(bme280_data_t environmental) {
     if (environmental.temperature < TEMPERATURE_TRESHOLD - (is_warm ? TEMPERATURE_TRESHOLD_HYSTERESIS : 0)) {
         if (is_warm) {
             is_warm = false;
+            if (!is_cooling_down) { // "cooling down" logic already changes the interval, so do it here only if "cooling down" was not detected before the temperature got low enough
+                bme280_set_mode(BME280_MODE_SLEEP); // writes to BME280 config register may be ignored if the sensor is not sleeping
+                bme280_set_interval(BME280_STANDBY_1000_MS);
+                bme280_set_mode(BME280_MODE_NORMAL);
+                app_timer_stop(main_timer_id);
+                app_timer_start(main_timer_id, APP_TIMER_TICKS(INTERVAL_NORMAL, RUUVITAG_APP_TIMER_PRESCALER), NULL);
+                bluetooth_configure_advertising_interval(INTERVAL_NORMAL);
+                bluetooth_apply_configuration();
+            }
             is_cooling_down = false; // already cool at this point
-            NRF_LOG_INFO("No longer warm\r\n");
+            NRF_LOG_INFO("Tag is no longer warm\r\n");
         }
     } else if (!is_cooling_down) { // warm and not cooling down
         if (!is_warm) { // first time "warm" during this session
@@ -201,7 +210,7 @@ static void checkAndUpdateInterval(bme280_data_t environmental) {
         // if leds are enabled, show some geeky nerd status indicators and what not
         if (enable_leds) {
             int32_t hDelta = environmental.humidity - last_environmental.humidity;
-            if (hDelta> HUMIDITY_INCREASE_TRESHOLD) {
+            if (hDelta > HUMIDITY_INCREASE_TRESHOLD) {
                 humidity_blink_counter += HUMIDITY_BLINK_COUNTER_INCREMENT;
             }
             if (humidity_blink_counter > 0) { // indicate stuff related to humidity

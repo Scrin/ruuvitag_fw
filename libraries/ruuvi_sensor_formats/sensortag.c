@@ -67,9 +67,8 @@ void encodeToRawFormat5(uint8_t* data_buffer, bme280_data_t* environmental, acce
 {
     static uint32_t packet_counter = 0;
     data_buffer[0] = RAW_FORMAT_2;
-    environmental->temperature *= 2; //Spec calls for 0.005 degree resolution, bme280 gives 0.01
-    data_buffer[1] = (environmental->temperature)>>8;
-    data_buffer[2] = (environmental->temperature)&0xFF;
+    data_buffer[1] = (environmental->temperature*2)>>8;
+    data_buffer[2] = (environmental->temperature*2)&0xFF;
     uint32_t humidity = environmental->humidity;
     humidity *= 400; 
     humidity /= 1024;
